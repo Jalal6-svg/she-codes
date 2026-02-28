@@ -605,3 +605,176 @@ function revealOnScroll() {
 
 window.addEventListener("scroll", revealOnScroll);
 window.addEventListener("load", revealOnScroll);
+
+
+// ===== PAYMENT MODAL =====
+var selectedPaymentMethod = null;
+
+var pricingPlans = {
+    free: { name: "Free Trial", price: "$0", period: "forever" },
+    student: { name: "Student Plan", price: "$5.00", period: "/month" },
+    center: { name: "Learning Center", price: "$49.00", period: "/month" }
+};
+
+function openPaymentModal(planKey) {
+    var plan = pricingPlans[planKey];
+    document.getElementById("paymentPlanName").textContent = plan.name + " — " + plan.price + plan.period;
+    document.getElementById("paymentAmount").textContent = plan.price;
+    selectedPaymentMethod = null;
+
+    var methodBtns = document.querySelectorAll(".payment-method-btn");
+    for (var i = 0; i < methodBtns.length; i++) {
+        methodBtns[i].classList.remove("selected");
+    }
+
+    var confirmBtn = document.getElementById("paymentConfirmBtn");
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = "Select a payment method";
+
+    document.getElementById("paymentOverlay").classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+}
+
+// Wire up pricing buttons
+var pricingButtons = document.querySelectorAll("#pricing .price-card .btn");
+for (var p = 0; p < pricingButtons.length; p++) {
+    pricingButtons[p].addEventListener("click", function (e) {
+        e.preventDefault();
+        var card = this.closest(".price-card");
+        var cards = document.querySelectorAll("#pricing .price-card");
+        var index = 0;
+        for (var c = 0; c < cards.length; c++) {
+            if (cards[c] === card) { index = c; }
+        }
+        var keys = ["free", "student", "center"];
+        if (keys[index] === "free") {
+            alert("🎉 Welcome! Your free trial is now active. Enjoy 1 IELTS test and 5 EduQuest quizzes!");
+            return;
+        }
+        openPaymentModal(keys[index]);
+    });
+}
+
+// Payment method selection
+var paymentMethodBtns = document.querySelectorAll(".payment-method-btn");
+for (var pm = 0; pm < paymentMethodBtns.length; pm++) {
+    paymentMethodBtns[pm].addEventListener("click", function () {
+        for (var j = 0; j < paymentMethodBtns.length; j++) {
+            paymentMethodBtns[j].classList.remove("selected");
+        }
+        this.classList.add("selected");
+        selectedPaymentMethod = this.getAttribute("data-method");
+
+        var confirmBtn = document.getElementById("paymentConfirmBtn");
+        confirmBtn.disabled = false;
+        var names = { payme: "Payme", click: "Click", visa: "Visa", uzcard: "Uzcard" };
+        confirmBtn.textContent = "Pay with " + names[selectedPaymentMethod];
+    });
+}
+
+// Close modal
+document.getElementById("paymentClose").addEventListener("click", function () {
+    document.getElementById("paymentOverlay").classList.add("hidden");
+    document.body.style.overflow = "";
+});
+
+document.getElementById("paymentOverlay").addEventListener("click", function (e) {
+    if (e.target === this) {
+        this.classList.add("hidden");
+        document.body.style.overflow = "";
+    }
+});
+
+// Confirm payment (simulated)
+document.getElementById("paymentConfirmBtn").addEventListener("click", function () {
+    if (!selectedPaymentMethod) return;
+
+    this.disabled = true;
+    this.textContent = "Processing...";
+
+    var btn = this;
+    setTimeout(function () {
+        var modal = document.querySelector(".payment-modal");
+        var amount = document.getElementById("paymentAmount").textContent;
+        var names = { payme: "Payme", click: "Click", visa: "Visa", uzcard: "Uzcard" };
+
+        modal.innerHTML =
+            '<button class="payment-close" id="paymentCloseSuccess">✕</button>' +
+            '<div class="payment-success">' +
+            '<span class="payment-success-icon">🎉</span>' +
+            '<h4>Payment Successful!</h4>' +
+            '<p>Your payment of <strong>' + amount + '</strong> via <strong>' + names[selectedPaymentMethod] + '</strong> has been processed.</p>' +
+            '<br><p>Welcome to AlloTutor! Start learning now.</p>' +
+            '</div>';
+
+        document.getElementById("paymentCloseSuccess").addEventListener("click", function () {
+            document.getElementById("paymentOverlay").classList.add("hidden");
+            document.body.style.overflow = "";
+            // Restore modal content for next use
+            setTimeout(restorePaymentModal, 300);
+        });
+    }, 1500);
+});
+
+function restorePaymentModal() {
+    var modal = document.querySelector(".payment-modal");
+    modal.innerHTML =
+        '<button class="payment-close" id="paymentClose">✕</button>' +
+        '<h3>Complete Payment</h3>' +
+        '<div class="payment-plan-name" id="paymentPlanName">Student Plan — $5/month</div>' +
+        '<div class="payment-divider"></div>' +
+        '<div class="payment-label">Choose Payment Method</div>' +
+        '<div class="payment-methods-grid">' +
+        '<button class="payment-method-btn" data-method="payme"><span class="payment-method-icon payme-logo">payme</span><span class="payment-method-desc">UZS balance</span></button>' +
+        '<button class="payment-method-btn" data-method="click"><span class="payment-method-icon click-logo">CLICK</span><span class="payment-method-desc">UZS balance</span></button>' +
+        '<button class="payment-method-btn" data-method="visa"><span class="payment-method-icon visa-logo">VISA</span><span class="payment-method-desc">International card</span></button>' +
+        '<button class="payment-method-btn" data-method="uzcard"><span class="payment-method-icon uzcard-logo">UZCARD</span><span class="payment-method-desc">Local card</span></button>' +
+        '</div>' +
+        '<div class="payment-amount"><span class="payment-amount-label">Total Amount</span><span class="payment-amount-value" id="paymentAmount">$5.00</span></div>' +
+        '<button class="payment-confirm-btn" id="paymentConfirmBtn" disabled>Select a payment method</button>' +
+        '<div class="payment-secure-note">🔒 Secure payment — your data is encrypted</div>';
+
+    // Re-bind event listeners
+    document.getElementById("paymentClose").addEventListener("click", function () {
+        document.getElementById("paymentOverlay").classList.add("hidden");
+        document.body.style.overflow = "";
+    });
+
+    var newMethodBtns = document.querySelectorAll(".payment-method-btn");
+    for (var i = 0; i < newMethodBtns.length; i++) {
+        newMethodBtns[i].addEventListener("click", function () {
+            selectedPaymentMethod = this.getAttribute("data-method");
+            for (var j = 0; j < newMethodBtns.length; j++) {
+                newMethodBtns[j].classList.remove("selected");
+            }
+            this.classList.add("selected");
+            var confirmBtn = document.getElementById("paymentConfirmBtn");
+            confirmBtn.disabled = false;
+            var names = { payme: "Payme", click: "Click", visa: "Visa", uzcard: "Uzcard" };
+            confirmBtn.textContent = "Pay with " + names[selectedPaymentMethod];
+        });
+    }
+
+    document.getElementById("paymentConfirmBtn").addEventListener("click", function () {
+        if (!selectedPaymentMethod) return;
+        this.disabled = true;
+        this.textContent = "Processing...";
+        var btn = this;
+        setTimeout(function () {
+            var modal = document.querySelector(".payment-modal");
+            var amount = document.getElementById("paymentAmount").textContent;
+            var names = { payme: "Payme", click: "Click", visa: "Visa", uzcard: "Uzcard" };
+            modal.innerHTML =
+                '<button class="payment-close" id="paymentCloseSuccess">✕</button>' +
+                '<div class="payment-success"><span class="payment-success-icon">🎉</span><h4>Payment Successful!</h4>' +
+                '<p>Your payment of <strong>' + amount + '</strong> via <strong>' + names[selectedPaymentMethod] + '</strong> has been processed.</p>' +
+                '<br><p>Welcome to AlloTutor! Start learning now.</p></div>';
+            document.getElementById("paymentCloseSuccess").addEventListener("click", function () {
+                document.getElementById("paymentOverlay").classList.add("hidden");
+                document.body.style.overflow = "";
+                setTimeout(restorePaymentModal, 300);
+            });
+        }, 1500);
+    });
+}
+
